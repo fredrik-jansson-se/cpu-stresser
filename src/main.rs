@@ -13,6 +13,7 @@ impl load::load_service_server::LoadService for MyLoadService {
         &self,
         _request: tonic::Request<load::Load>,
     ) -> Result<tonic::Response<load::Empty>, tonic::Status> {
+        tracing::info!("Received load request: {:?}", _request);
         Ok(tonic::Response::new(load::Empty {}))
     }
 }
@@ -26,7 +27,10 @@ struct Opts {
 #[derive(clap::Subcommand, Debug)]
 enum Command {
     Server,
-    Client
+    Client {
+        num_cpus: Option<i32>,
+        time_seconds: Option<i32>,
+    },
 }
 
 #[tokio::main]
@@ -44,13 +48,15 @@ async fn main() -> anyhow::Result<()> {
                 .serve(addr)
                 .await?;
         }
-        Command::Client => {
+        Command::Client {
+            num_cpus,
+            time_seconds,
+        } => {
             let mut client =
-                load::load_service_client::LoadServiceClient::connect("http://[::1]:50051")
-                    .await?;
+                load::load_service_client::LoadServiceClient::connect("http://[::1]:50051").await?;
             let request = tonic::Request::new(load::Load {
-                cpus: 1,
-                time_seconds: 1,
+                cpus: num_cpus.unwrap_or(1),
+                time_seconds: time_seconds.unwrap_or(5),
             });
             let response = client.set_load(request).await?;
             println!("Response: {:?}", response.into_inner());
