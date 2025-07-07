@@ -23,11 +23,8 @@ impl load::load_service_server::LoadService for MyLoadService {
         let cpus = cpus.max(1) as usize;
         let duration = std::time::Duration::from_secs(time_seconds.max(1) as u64);
 
-        let mut handles = Vec::with_capacity(cpus);
-
         for _ in 0..cpus {
-            let handle = tokio::task::spawn_blocking({
-                let duration = duration;
+            tokio::task::spawn_blocking({
                 move || {
                     let end = std::time::Instant::now() + duration;
                     while std::time::Instant::now() < end {
@@ -35,11 +32,6 @@ impl load::load_service_server::LoadService for MyLoadService {
                     }
                 }
             });
-            handles.push(handle);
-        }
-
-        for handle in handles {
-            let _ = handle.await;
         }
 
         Ok(tonic::Response::new(load::Empty {}))
