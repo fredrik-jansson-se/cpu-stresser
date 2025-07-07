@@ -6,8 +6,12 @@ message Load {
   int32 cpus = 1;
   int32 time_seconds = 2;
 }
-message Empty {}
+
+message Progress {
+  int32 spent_seconds = 1;
+  int32 total_seconds = 2;
+}
 
 service LoadService {
-  rpc SetLoad(Load) returns (Empty);
+  rpc SetLoad(Load) returns (stream Progress);
 }
