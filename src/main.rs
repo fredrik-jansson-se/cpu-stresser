@@ -27,9 +27,10 @@ impl load::load_service_server::LoadService for MyLoadService {
         let total_seconds = time_seconds.max(1);
         let duration = std::time::Duration::from_secs(total_seconds as u64);
 
+        let mut handles = Vec::with_capacity(cpus);
+
         for _ in 0..cpus {
-            tokio::task::spawn_blocking({
-                let duration = duration.clone();
+            let handle = tokio::task::spawn_blocking({
                 move || {
                     let end = std::time::Instant::now() + duration;
                     while std::time::Instant::now() < end {
@@ -37,6 +38,11 @@ impl load::load_service_server::LoadService for MyLoadService {
                     }
                 }
             });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            let _ = handle.await;
         }
 
         let (tx, rx) = tokio::sync::mpsc::channel(1);
